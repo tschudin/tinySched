@@ -1,0 +1,85 @@
+# cocktails from https://www.randomlists.com/drinks?dup=false&qty=32
+Adios Motherf**ker
+Sea Breeze
+White Russian
+Gin Gimlet
+Mind Eraser
+Dry Gin Martini
+Long Island Iced Tea
+Rum Runner
+Cosmopolitan
+Sidecar
+Tequila Sunrise
+Seven and Seven
+Hurricane
+Irish Coffee
+Mojito
+Daiquiri
+Cuba Libre
+Harvey Wallbanger
+Americano
+Tom Collins
+Amaretto Sour
+Margarita
+Bloody Mary
+Gin & Tonic
+Mimosa
+Bahama Mama
+Chambord Kir Royale
+Whiskey Sour
+Tequila Sunrise
+Jack Rose
+Electric Lemonade
+Moscow Mule
+Daiquiri v2
+Screwdriver v3
+Boulevardier v2
+Mimosa v2
+Presbyterian v2
+Lemon Drop v2
+Adios Motherf**ker v2
+Whiskey Sour v2
+Gin Gimlet v2
+Jack Rose v2
+White Russian v2
+Cosmopolitan v2
+Mojito v2
+Mind Eraser v2
+Mudslide v2
+Piña Colada v2
+Irish Car Bomb v2
+Hurricane v2
+Irish Coffee v2
+Electric Lemonade v2
+Rum Runner v2
+Cowboy Coffee v2
+Dry Gin Martini v2
+Long Island Iced Tea v2
+El Presidente v2
+Seven and Seven v2
+Apple Martini v2
+Margarita v2
+Gin & Tonic v2
+Negroni v2
+Americano v2
+Dirty Martini v2
+Alabama Slammer v2
+Chambord Kir Royale v2
+Bahama Mama v2
+Mai Tai v2
+Moscow Mule v2
+Old Fashioned v2
+Gin Buck v2
+Sex on the Beach v2
+Bloody Mary v2
+Tom Collins v2
+Tequila Sunrise v2
+Cuba Libre v2
+Sidecar v2
+Reverse Revolver v2
+Harvey Wallbanger v2
+Sea Breeze v2
+Manhattan v2
+Mint Julep v2
+Amaretto Sour v2
+Tequila Sunrise v2

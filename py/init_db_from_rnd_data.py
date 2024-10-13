@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 
-# tinySched-over-sqlite.py
+# init_db_from_rnd_data.py
 
-# explore the functionality of a decentralized conference scheduling
-# app by first prototyping it with a relational database
+# import the random data items for populating a tinySched database
 
-# Oct 1, 2024 <christian.tschudin@unibas.ch>
+# Oct 1 to Oct 13, 2024 <christian.tschudin@unibas.ch>
 
+import random
 import sqlite3
+import sys
 
 DB_NAME = "tinysched-v1.db"
 
@@ -38,7 +39,9 @@ def db_init():
     cmds = [
         '''CREATE TABLE 'users' (    -- public keys aka feed IDs
              [UserID] integer primary key autoincrement not null,
-             [DisplayName] text
+             [DisplayName] text,
+             [Email] text,
+             [Bio] text
            )''',
         '''CREATE TABLE 'conferences' ( -- supports many conferences
              [ConfID] integer primary key autoincrement not null,
@@ -56,8 +59,9 @@ def db_init():
              [TalkID] integer primary key autoincrement not null,
              [IssuerRef] integer,
              [ConfRef] integer,
-             [Authors] text,      -- freeform text
-             [Description] text,  -- freeform text
+             [Authors] text,   -- freeform text
+             [Title] text,     -- freeform text
+             [Abstract] text,  -- freeform text
              FOREIGN KEY(IssuerRef) REFERENCES users(userID),
              FOREIGN KEY(ConfRef) REFERENCES conferences(ConfID)
            )''',
@@ -73,11 +77,12 @@ def db_init():
              [SegmentID] integer primary key autoincrement not null,
              [IssuerRef] integer,
              [ConfRef] integer,
+             [Day] integer,
+             [Start_dt] text,
+             [End_dt] text,
              [PlaceRef] integer,
              [StewardRef] integer,
              [Title] text,
-             [Start_dt] text,
-             [End_dt] text,
              FOREIGN KEY(IssuerRef) REFERENCES users(userID),
              FOREIGN KEY(ConfRef) REFERENCES conferences(ConfID),
              FOREIGN KEY(PlaceRef) REFERENCES places(PlaceID),
@@ -117,12 +122,12 @@ def db_init():
            )''',
 
         '''CREATE VIEW 'roster' AS SELECT
-             conferences.Description,
+             conferences.Description, segments.Day,
              segments.Start_dt, segments.End_dt, segments.Title,
              places.Description,
              users.DisplayName AS steward,
              bookings.Start_dt, bookings.End_dt,
-             talks.Description, talks.Authors
+             talks.Title, talks.Authors
            FROM
              conferences
            INNER JOIN segments ON Segments.ConfRef= conferences.ConfID
@@ -149,11 +154,18 @@ def user2ref(nm):
 def get_roster():
     return cur.execute(f"SELECT * FROM roster").fetchall()
 
+def get_users():
+    return cur.execute(f"SELECT * FROM users").fetchall()
+
+def tim(t):
+    t = float(t)
+    return '%02d:%02d' % (int(t), 0 if t == int(t) else 30)
+
 # actions ------------------------------------------------------------
 
-def action_user_add(name):
-    cmd = f"INSERT INTO users (DisplayName) " + \
-          f"VALUES ('{name}')"
+def action_user_add(name, email, bio):
+    cmd = f"INSERT INTO users (DisplayName,Email,Bio) " + \
+          f"VALUES ('{name}','{email}','{bio}')"
     userID = cur.execute(cmd).lastrowid
     con.commit()
     return userID
@@ -203,24 +215,24 @@ def action_place_update(iam, place, authors, descr):
 def action_place_del(iam, place):
     pass
 
-def action_segment_add(iam, confID, placeID, steward, title, start, end):
+def action_segment_add(iam, confID, placeID, steward, title, day, start, end):
     cmd = f"INSERT INTO segments (IssuerRef,ConfRef,PlaceRef," + \
-                                f"StewardRef,Title,Start_dt,End_dt) " + \
+                                f"StewardRef,Title,Day,Start_dt,End_dt) " + \
           f"VALUES ({user2ref(iam)}, {confID}, {placeID}," + \
-                  f"{user2ref(steward)}, '{title}', '{start}', '{end}')"
+                  f"{user2ref(steward)},'{title}','{day}','{start}','{end}')"
     segmentID = cur.execute(cmd).lastrowid
     con.commit()
     return segmentID
 
-def action_segment_update(iam, segment, steward, title, start, end):
+def action_segment_update(iam, segment, steward, title, day, start, end):
     pass
 
 def action_segment_del(iam, segment):
     pass
 
-def action_talk_add(iam, confID, authors, descr):
-    cmd = f"INSERT INTO talks (IssuerRef,ConfRef,Authors,Description)" + \
-          f"VALUES ({user2ref(iam)}, {confID}, '{authors}', '{descr}')"
+def action_talk_add(iam, confID, authors, title, abstract):
+    cmd = f"INSERT INTO talks (IssuerRef,ConfRef,Authors,Title,Abstract)" + \
+          f"VALUES ({user2ref(iam)}, {confID}, '{authors}', '{title}', '{abstract}')"
     talkID = cur.execute(cmd).lastrowid
     con.commit()
     return talkID
@@ -259,11 +271,31 @@ if __name__ == '__main__':
     for x in sorted([r[0] for r in res if r[0] != 'sqlite_sequence' ]):
         print(" ", x)
 
-    print("\n# adding users")
-    for nm in ['Alice', 'Bob', 'Carol', 'Wendy']:
-        userID = action_user_add(nm)
-        print(" ", userID, nm)
+    def load_file(fn):
+        lst = []
+        with open('../data/' + fn, 'r') as f:
+            while True:
+                line = f.readline()
+                if line == None or len(line) == 0:
+                    break
+                line = line.strip()
+                if line[0] == '#':
+                    continue
+                lst.append(line)
+        return lst
 
+    for i in ['abstract','bio','email','name','place','session','title']:
+        cmd = f"{i}s = load_file('rnd_{i}.txt')"
+        exec(cmd)
+    titles = random.sample(titles,len(titles))
+    sessions = random.sample(sessions,len(sessions))
+    
+    # --- preparing the conference:
+
+    action_user_add('Wendy', 'wendy@archive.org', 'DWeb Executive Producer')
+    action_user_add('Bob',   'bob@archive.org',   'DWeb Assistant')
+    action_user_add('Carol', 'carol@archive.org', 'DWeb Assistant')
+    
     print("\n# create conference")
     confID = action_conference_add('Wendy', 'dWeb 1234')
 
@@ -273,62 +305,116 @@ if __name__ == '__main__':
     print("\n# promote a steward")
     action_role_promote('Wendy', confID, 'Bob', 'STEW')
 
-    print("\n# Alice registers")
-    action_register('Alice', confID, cancel=False)
+    print("\n# define locations")
+    place_ids = []
+    for i in range(len(places)):
+        try:
+            place_ids.append( action_place_add('Carol', confID, places[i]) )
+        except:
+            pass
 
-    print("\n# accept Alice as an attendee (e.g., she paid the fee)")
-    action_role_promote('Carol', confID, 'Alice', 'ATDE')
+    # --- running the conference:
 
-    print("\n# Alice submits a talk")
-    talkID1 = action_talk_add('Alice', confID,
-                              "Alice and friends", "Encrypted CRDTs")
+    print(f"\n# adding and registering {len(names)} users")
+    for i in range(len(names)):
+        try:
+            action_user_add(names[i], emails[i], bios[i])
+            action_register(names[i], confID, cancel=False)
+        except:
+            pass
 
-    print("\n# Carol submits a talk")
-    talkID2 = action_talk_add('Carol', confID,
-                              "Lewis Carroll", "The Grinning Cat")
+    u = get_users()
+    print('#', len(u), "users")
+
+    print("\n# accept 450 users (e.g., they paid the fee)")
+    for i in range(450):
+        ref = user2ref(names[i])
+        # print(i, names[i], ref)
+        if ref == None:
+            continue
+        action_role_promote('Carol', confID, names[i], 'ATDE')
+
+    print("\n# first 100 users submit a talk")
+    talk_ids = []
+    for i in range(len(titles)):
+        try:
+            talk_ids.append( action_talk_add(names[i], confID, names[i],
+                                     titles[i], abstracts[i]) )
+        except:
+            pass
 
     print("\n# define a placeholder talk")
-    talkID3 = action_talk_add('Wendy', confID, 'n.a.', 'tba')
+    talkHolder = action_talk_add('Wendy', confID, 'n.n.', 'tbd', 'unconf talk')
 
-    print("\n# define three locations")
-    placeID1 = action_place_add('Carol', confID, "Hacker Hall Booth A")
-    placeID2 = action_place_add('Carol', confID, "Redwood Cathedral")
-    placeID3 = action_place_add('Carol', confID, "Library")
-    
-    print("\n# define three program segments")
-    segmentID1 = action_segment_add('Carol', confID, placeID1,
-                                    'Bob', "Tutorials", 10, 12)
-    segmentID2 = action_segment_add('Carol', confID, placeID2,
-                                    'Alice', "Unconference slot 1", 12, 14)
-    segmentID3 = action_segment_add('Carol', confID, placeID3,
-                                    'Carol', "Unconference slot 2", 14, 16)
+    print("\n# define two days with 4 blocks, 8 parallel sessions, 4 talks each")
+    start_times = [8,10,14,16]
+    seg_ids = []
+    for day in range(2):
+        where = random.sample(place_ids, 8)
+        for i in range(len(start_times)):
+            seg_titles = sessions[:8]
+            sessions = sessions[8:]
+            for j in range(8):
+                sid = action_segment_add('Carol', confID, where[j],
+                                 'Bob', seg_titles[j], day,
+                                 start_times[i], start_times[i]+2)
+                seg_ids.append( (sid,start_times[i]) )
+                
 
-    print("\n# schedule Alice's talk")
-    action_booking_add('Carol', confID, segmentID1, talkID1, 10, 10.5)
-    print("\n# schedule Carol's talk")
-    action_booking_add('Wendy', confID, segmentID1, talkID2, 10.5, 11)
+    print("\n# accept 4 talks per segment")
+    for i, sid in enumerate(seg_ids):
+        start_t = sid[1]
+        for k in range(4):
+            action_booking_add('Carol', confID, sid[0], talk_ids[4*i+k],
+                               start_t, start_t + 0.5)
+            start_t += 0.5
 
-    print("\n# schedule placeholder talks for the unconference")
-    action_booking_add('Carol', confID, segmentID2, talkID3, 14, 14.5)
-    action_booking_add('Carol', confID, segmentID2, talkID3, 14.5, 15)
-    action_booking_add('Carol', confID, segmentID2, talkID3, 15, 15.5)
-    action_booking_add('Carol', confID, segmentID2, talkID3, 15.5, 16)
-    action_booking_add('Carol', confID, segmentID3, talkID3, 14, 14.5)
-    action_booking_add('Carol', confID, segmentID3, talkID3, 14.5, 15)
-    action_booking_add('Carol', confID, segmentID3, talkID3, 15, 15.5)
-    action_booking_add('Carol', confID, segmentID3, talkID3, 15.5, 16)
 
-    # reports
+    print("\n# create place holders for the day3 unconference")
+    print("# (3 blocks with 4 parallel sessions with 4 discussions)")
+    day = 2
+    start_times = start_times[1:]
+    for i in range(3):
+        for j in range(4):
+            where = random.sample(place_ids, 4)
+            sid = action_segment_add('Carol', confID, where[j],
+                                     'Bob', f"Unconference Discussion {i+1}.{j+1}", day,
+                                 start_times[i], start_times[i]+2)
+            start_t = start_times[i]
+            for k in range(4):
+                action_booking_add('Carol', confID, sid, talkHolder,
+                               start_t, start_t + 0.5)
+                start_t += 0.5
+
+
+    # --- reports
+
     print("\n# print full program:")
-    conf, seg = '', ''
-    for line in get_roster():
-        if line[0] != conf:
-            conf = line[0]
-            print(f"\nCONFERENCE '{conf}'")
-        if line[1]+'-'+line[2] != seg:
-            seg = line[1]+'-'+line[2]
-            print(f"\n  {seg} '{line[3]}' in {line[4]}, steward={line[5]}\n")
-        print(f"        {line[6]}-{line[7]} '{line[8]}' by {line[9]}")
+
+    # for i,line in enumerate(get_roster()):
+    #     print(i,line)
+
+    day, conf, stt, seg = '', '', '', ''
+    for d in range(3):
+        k = 1
+        for line in get_roster():
+            if line[0] != conf:
+                conf = line[0]
+                print(f"\nCONFERENCE '{conf}'")
+            if int(line[1]) != d:
+                continue
+            if day != line[1]:
+                day = line[1]
+                print("\n  DAY", day+1)
+            if line[4] != seg:
+                seg = line[4]
+                x = f"{'%02d' % int(line[2])}-{line[3]}"
+                if stt != x:
+                    stt = x
+                    print(f"\n    {stt} Block {k}")
+                    k += 1
+                print(f"\n      Session on '{seg}' in {line[5]}, steward={line[6]}\n")
+            print(f"        {tim(line[7])}-{tim(line[8])} '{line[9]}' by {line[10]}")
     
     '''
     Missing:
