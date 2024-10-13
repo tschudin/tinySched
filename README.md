@@ -3,7 +3,67 @@
 A playground for a decentralized conference scheduling application,
 hopefully running over frugal tinySSB
 
+## Exploration 2 with sqlite: overall data volume
+
+The current DB model has the following stats:
+- 10 tables
+- 46 fields
+
+We accumulated fake names, emails, talk titles and abstract, session
+titles etc.  With these data (in the ```./data``` directory) we
+populate the sqlite using some volume assumptions:
+
+- 600 registration requests (name, email, bio)
+- 450 accepted attendees
+- 320 talk proposals (title and abstract)
+- 2 days with 4 blocks having 8 parallel sessions each having 4 talks -> 256 accepted talks
+- 0.75 day for unconference (3 blocks having 4 parallel sessions each having 4 talks -> 48 unconference discussions)
+
+
+The script ```init_db_from_rnd_data.py``` dumps a fake conference program,
+as e.g. in
+```
+CONFERENCE 'dWeb 1234'
+
+  DAY 1
+
+    08-10 Block 1
+
+      Session on 'Electric Lemonade v2' in Cricket Field, steward=Bob
+
+        08:00-08:30 'Which Disney princess do you find to be the most attractive?' by Morgan Watkins
+        08:30-09:00 'Why the NASA shuttle program was stopped' by Kason Ochoa
+        09:00-09:30 'Conspiracy theories' by Liberty Pittman
+        09:30-10:00 'How I Became a Personal Care Aide' by Caitlin Clarke
+
+      Session on 'Mimosa v2' in Bakery, steward=Bob
+
+        08:00-08:30 'How I Became a Paramedic' by Demarcus Sexton
+        08:30-09:00 'How the CIA can track terrorists' by Christina Marquez
+        09:00-09:30 'Do you like music? if so what kind?' by Rashad Chapman
+        09:30-10:00 'What are your major goals in life?' by Stephanie Holland
+...
+```
+
+The total volume of the sqlite database is slightly below 400KB.
+
+Adding 25% editing churn to the data, this becomes 0.5MB.
+
+Taking into account the encoding overhead of tinySSB (signatures), we
+double this to 1MB.
+
+Adding 450*30 personal talk selections (personalized schedule), each
+needing 240B: this is another 3MB.
+
+Adding an engineering safety margin of 30% to the 4MB and 15'000 records
+we get an **overall data volume of 6MB for 20'000 records.**
+
+
 ## Exploration 1 with sqlite
+
+Note: This section is about an outdated trace of the Python script at
+
+https://github.com/tschudin/tinySched/blob/3377740f94ccf269ffbaf99eeab2d17aa62cbf02/py/tinySched-over-sqlite.py
 
 See py/tinySSB-over-sqlite.py for exploring the required sched functionality
 using a traditional relational database. It has 9 tables (!) and
