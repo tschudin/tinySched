@@ -1,7 +1,12 @@
 # tinySched
 
 A playground for a decentralized conference scheduling application,
-hopefully running over frugal tinySSB
+hopefully running over frugal tinySSB.
+
+In a first step we model the Conference Scheduling application using a
+traditional and central relational data model. This permits to
+understand the required functionality in an early stage, before
+attempting to map the requirements to tinySSB's append-only logs.
 
 ## Exploration 2 with sqlite: overall data volume
 
@@ -56,7 +61,8 @@ Adding 450*30 personal talk selections (personalized schedule), each
 needing 240B: this is another 3MB.
 
 Adding an engineering safety margin of 30% to the 4MB and 15'000 records
-we get an **overall data volume of 6MB for 20'000 records.**
+we get an **overall data volume of 6MB for 20'000 records,
+carried in 52'500 tinySSB packets (120B).**
 
 
 ## Exploration 1 with sqlite
